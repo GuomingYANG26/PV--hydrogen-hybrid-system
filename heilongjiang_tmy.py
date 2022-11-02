@@ -248,7 +248,7 @@ def optimize_capacity_factor (tilt, azimuth,in_path):
                 max_axis_tilt = axis_tilt
                 max_axis_azimuth = axis_azimuth
                 pv_module_chain = ac
-    #将cf,tilt,azimuths重排成矩阵形式
+    #rearrange cf, tilt, azimuths into matrix form
     cf = np.reshape(cf, [len(tilt), len(azimuth)])
     tilts = tilt
     for i in range(len(azimuth)-1):
