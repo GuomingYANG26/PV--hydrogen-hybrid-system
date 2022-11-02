@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 25 13:24:36 2022
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
 
-@author: YANG Guoming
 """
 # PV power geneartion modeling considering actual physical process via PVLIB 
 import pvlib
@@ -15,7 +18,7 @@ from pvlib.iotools.psm3 import parse_psm3
 import warnings
 warnings.filterwarnings('ignore')
 
-
+# The function to calculate the reflection loss
 def loss_reflect_abs(aoi, n_glass=1.526, n_ar=1.3, n_air=1):
     '''adapted from section 8 in PVWatts Version 5 Manual'''
     #the angle of refraction into the antireflection coating
@@ -249,7 +252,7 @@ sns.lineplot(data=pv_module_chain)
 print(pv_module_chain.mean())
 pv_module_chain.to_csv(r'D:\Doctor\paper\first2022\code\edition3\pv_module_chain.csv', index=False)
 
-####----------------画热图用的程序---------------------
+####----------------Code to get the data needed for drawing heat map---------------------
 pv_module_chain = pd.read_csv(r'D:\Doctor\paper\first2022\code\edition3\pv_module_chain.csv')
 pv_module_chain = pv_module_chain.iloc[:,0].values
 pv_module_chain_reshape = pv_module_chain.reshape(24,-1,order='F').T/1000000

@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Sat Jun 11 10:20:13 2022
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
+"""
 import gurobipy as gp
 from gurobipy import GRB
 import pandas as pd
@@ -7,54 +14,53 @@ import math
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pvlib
-#--------------------------数据输入----------------------------------
+#--------------------------data input----------------------------------
 #1€=1.05$  1RMB=0.15$
-euro_to_dollar = 1.05 #欧元对美元汇率
-RMB_to_dollar = 0.15  #人民币对美元汇率
-N_variable = 8760     #一年小时数
-#电价
+euro_to_dollar = 1.05 #exchange rate of Euro against US dollar
+RMB_to_dollar = 0.15  #exchange rate of RMB against US dollar
+N_variable = 8760     #Number of hours per year
+#electricity price
 electricity_price = pd.read_csv(r'D:\Doctor\paper\first2022\2020_electriciy_price.csv')
 electricity_price = electricity_price.iloc[:,0].values
 electricity_price = euro_to_dollar*electricity_price/1000
-#光伏出力
+#PV power
 #model chain
 #model_chain_pv = pd.read_csv(r'D:\Doctor\paper\first2022\pv_module_chain.csv')
 #conventional pv
 #model_chain_pv = pd.read_csv(r'D:\Doctor\paper\first2022\pv_tradional.csv')
 #pv_modeling = model_chain_pv.iloc[:,0].values/1000
-hydrogen_price = 9   #氢气价格
-lambda_air1 = 1      #政府重视PV程度
-lambda_air2 = 1      #政府重视H2程度
-sigma_HFV = 110       #氢燃料汽车的燃气经济性
+hydrogen_price = 9   #hydrogen sale price
+lambda_air1 = 1      #the support level for PV from government
+lambda_air2 = 1      #the support level for hydrogen from government
+sigma_HFV = 110       #fuel economy of HFC
 
-
-#燃煤机组污染物排放量及环境价值
+#emission amounts and penalty coefficients of the pollutants emitted by coal-fired thermal power generators
 mu_co2, mu_so2, mu_nox0 = 86.4725/1000, 3.9446/1000, 3.09383/1000
 delta_co2, delta_so2, delta_nox = 0.0035, 0.923, 1.23
-#燃油汽车污染物排放量及环境价值
+#emission amounts and penalty coefficients of the pollutants emitted by gasoline-fueled vehicles
 mu_co, mu_nox1, mu_hc = 1000/1000/1000, 60/1000/1000, 170/1000/1000
 delta_co, delta_nox, delta_hc = .07, 1.23, .3895
 
-rated_power_of_unit_compressor = 5   #单位：kW
-#各个设备的经济及技术参数  包括压缩机，变电站，电解槽，储氢罐，氢燃料电池的单位投资成本，运维成本因子，寿命，效率
-compressor_invest, compressor_OM_ratio, compressor_lifetime = 712*rated_power_of_unit_compressor, 0.01, 20              #注意整数,5表示单台压缩机功率为5kW
+rated_power_of_unit_compressor = 5   #unit: kW
+#The economic and technical parameters of each component, including the unit cost, the ratio of O&M cost, lifetime and efficiency of compressors, transformer, electrolyzers, hydrogen tanks and HFCs
+compressor_invest, compressor_OM_ratio, compressor_lifetime = 712*rated_power_of_unit_compressor, 0.01, 20              #integer,5 denotes the rated power of a single compressor
 trans_invest, trans_OM_ratio, trans_lifetime, trans_efficiency = 400*euro_to_dollar, 0.05, 20, 0.98
 electrolyzer_invest, electrolyzer_OM_ratio, electrolyzer_lifetime, electrolyzer_efficiency = 1182, 0.05, 8, 0.73
-tanks_invest, tanks_OM_ratio, tanks_lifetime = 295*euro_to_dollar, 0.01, 20              #注意单位为$/kg, m^3
+tanks_invest, tanks_OM_ratio, tanks_lifetime = 295*euro_to_dollar, 0.01, 20              #note that the unit is $/kg, m^3
 hydrogen_fuel_cell_invest, hydrogen_fuel_cell_OM_ratio, hydrogen_fuel_cell_lifetime, hydrogen_fuel_cell_efficiency = 46, 0.05, 5, 0.47
 
-tao = 0.10    #折现率
-standar_pressure = 1                #标准大气压
-hydrogen_high_heating_value = 39    #氢气高热值
-compressor_pressure = 200           #压缩机工作压力
-compressor_pressure_ref = 350       #压缩机参考工作压力
-compressor_power_comsumption_rate = 2.1     #压缩机在标准工作压力下压缩单位千克氢气单位小时消耗的电能
-utilization_rate = 0.95       #光电利用率
-mass_volume_fraction_H2 = 30 #kg/m^3 氢气的体积质量分数 0.03kg/L
-delt_time = 1 #时间间隔一小时
-#光伏电站
-module_price, module_OM_ratio, module_lifetime, module_capacity = 0.37, 0.02, 25, 1000000         #注意单位为$/W  光伏组件单价，O&M比例，寿命，容量
-inverter_price, inverter_OM_ratio, inverter_lifetime, inverter_capacity = 0.07, 0.02, 25, 833000   #注意单位为$/W  逆变器单价，O&M比例，寿命，容量
+tao = 0.10    #discount rate
+standar_pressure = 1                #standard atmospheric pressure
+hydrogen_high_heating_value = 39    #hydrogen high heating value
+compressor_pressure = 200           #working pressure of compressor
+compressor_pressure_ref = 350       #reference working pressure of compressor
+compressor_power_comsumption_rate = 2.1     #the hourly power consumption when compressors compress per kilogram of hydrogen under standard working pressure
+utilization_rate = 0.95       #PV power utilization rate
+mass_volume_fraction_H2 = 30 #kg/m^3 mass volume fraction of hydrogen0.03kg/L
+delt_time = 1 #time interval
+#PV plant
+module_price, module_OM_ratio, module_lifetime, module_capacity = 0.37, 0.02, 25, 1000000         #note that the unit is $/W.  unit cost, the ratio of O&M, lifetime, rated power of PV modules
+inverter_price, inverter_OM_ratio, inverter_lifetime, inverter_capacity = 0.07, 0.02, 25, 833000   #note that the unit is $/W.  unit cost, the ratio of O&M, lifetime, rated power of inverter
 
 
 xi_module = tao*(1+tao)**module_lifetime/((1+tao)**module_lifetime - 1)
@@ -69,17 +75,17 @@ xi_hydrogen_fuel_cell = tao*(1+tao)**hydrogen_fuel_cell_lifetime/((1+tao)**hydro
 def Heilongjiang_pv(data_path, in_path):
 
     
-    #光伏出力
+    #PV power
     #model chain
     model_chain_pv = pd.read_csv(data_path)
     pv_modeling = model_chain_pv.iloc[:,0].values/1000
     with open(in_path, 'r') as f:
         data, metadata =  pvlib.iotools.psm3.parse_psm3(f,map_variables=True)
     ghi = data['ghi'].mean()
-    # --------------------------------创建模型------------------------------------
+    # --------------------------------construct model------------------------------------
     photo_hydrogen=gp.Model("photo_hydrogen")
 
-    #--------------------------------变量声明--------------------------------------
+    #--------------------------------define variables--------------------------------------
     N1 = photo_hydrogen.addVar(vtype=GRB.INTEGER, name='number of the compressor')
     X2 = photo_hydrogen.addVar(lb=0, ub=GRB.INFINITY,vtype=GRB.CONTINUOUS, name='capacity of the transformer')
     X3 = photo_hydrogen.addVar(lb=0, ub=GRB.INFINITY,vtype=GRB.CONTINUOUS, name='capacity of the electrolyzer')
@@ -113,57 +119,57 @@ def Heilongjiang_pv(data_path, in_path):
     C1 = photo_hydrogen.addVar(lb=0, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='annual investment cost')
     C2 = photo_hydrogen.addVar(lb=0, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='annual O&M cost')
 
-    # -----------------------------添加约束---------------------------------------
-    #电解槽约束
+    # -----------------------------Constraints---------------------------------------
+    #constraints of electrolyzers
     photo_hydrogen.addConstrs((Demand_elec[t] == P_elec[t]*electrolyzer_efficiency/hydrogen_high_heating_value for t in range(N_variable)), \
                               name='operation constraint of the electrolyzer 1')
     photo_hydrogen.addConstrs((P_elec[t] <= X3 for t in range(N_variable)), name='operation constraint of the electrolyzer 2')
 
-    #压缩机约束
+    #constraints of compressors
     photo_hydrogen.addConstrs((P_comp[t] == compressor_power_comsumption_rate * Demand_elec[t] * math.log(compressor_pressure/standar_pressure) / math.log(compressor_pressure_ref/standar_pressure)\
                                for t in range(N_variable)), name='operation constraint of the compressor 1')
     photo_hydrogen.addConstrs((P_comp[t] <= N1*rated_power_of_unit_compressor for t in range(N_variable)), name='operation constraint of the compressor 2')    
 
-    #储氢罐约束
+    #constraints of hydrogen tanks
     photo_hydrogen.addConstrs((mass_volume_fraction_H2*V_tanks[t+1] == mass_volume_fraction_H2*V_tanks[t] + delt_time * (Demand_elec[t] - Demand_sale[t] - Demand_fuel_cell[t]) \
                                for t in range(N_variable-1)), name='hydrogen balance of the hydrogen tanks')
     photo_hydrogen.addConstrs((V_tanks[t] <= X4 for t in range(N_variable)), name='operation constraint of the hydrogen tanks')    
     photo_hydrogen.addConstr((V_tanks[0] == 0.5*X4), name='initial hydrogen storage level')
     photo_hydrogen.addConstr(mass_volume_fraction_H2*V_tanks[0] == mass_volume_fraction_H2*V_tanks[8759] + delt_time * (Demand_elec[8759] - Demand_sale[8759] - Demand_fuel_cell[8759]), name='terminal hydrogen storage level') 
 
-    #氢燃料电池约束
+    #constraints of hydrogen fuel cells
     photo_hydrogen.addConstrs((P_fuel_cell[t] == Demand_fuel_cell[t] * hydrogen_fuel_cell_efficiency * hydrogen_high_heating_value \
                                for t in range(N_variable)), name='operation constraint of the hydrogen fuel cell 1')   
     photo_hydrogen.addConstrs((P_fuel_cell[t] <= X5 for t in range(N_variable)), name='operation constraint of the hydrogen fuel cell 2') 
 
-    #光伏电站运行约束
+    #constraint of the PV plant
     photo_hydrogen.addConstrs((P_pv_net[t] + P_pv_curt[t] + P_elec[t] + P_comp[t] == pv_modeling[t] \
                                for t in range(N_variable)), name='operation constraint of the PV plants') 
-    #并网功率约束
+    #grid-connected power constraint
     photo_hydrogen.addConstrs((P_pv_net[t] + P_fuel_cell[t] <= X2 for t in range(N_variable)), name='Grid-connected power constraint') 
 
-    #光电利用率约束
+    #constraint of the PV power utilization rate
     photo_hydrogen.addConstr((sum(P_pv_curt[t] for t in range(N_variable)) <= (1 - utilization_rate) * sum(pv_modeling[t] for t in range(N_variable))), \
                               name='utilization rate of the PV power') 
         
-    # --------------------------设置目标函数--------------------------------
-    #年售氢收入
+    # --------------------------Objective function--------------------------------
+    #annual hydrogen sale revenue
     photo_hydrogen.addConstr((R1 == sum(hydrogen_price*Demand_sale[t] for t in range(N_variable))), name='revenue from hydrogen sale')
-    #年售电收入
+    #annual electricity sale revnue
     photo_hydrogen.addConstr((R2 == sum(trans_efficiency * electricity_price[t] * (P_pv_net[t] + P_fuel_cell[t]) \
                                         for t in range(N_variable))), name='revenue from electricity sale')
-    #年环境效益
+    #annual environmental benefits
     photo_hydrogen.addConstr((R3 == sum(lambda_air1 * trans_efficiency * (P_pv_net[t] + P_fuel_cell[t]) * (mu_co2*delta_co2+mu_so2*delta_so2+mu_nox0*delta_nox) for t in range(N_variable))\
                                         + sum(lambda_air2 * Demand_sale[t] * sigma_HFV *  (mu_co*delta_co + mu_nox1*delta_nox + mu_hc*delta_hc) for t in range(N_variable))), name='environmental revenue')
 
-    #年投资成本
+    #equivalent annual investment cost
 
     photo_hydrogen.addConstr((C1 == xi_module*module_price*module_capacity + xi_inverter*inverter_price*inverter_capacity \
                               + xi_compressor*compressor_invest*N1 + xi_trans*trans_invest*X2 \
                               + xi_electrolyzer*electrolyzer_invest*X3 + xi_tanks*tanks_invest*X4 \
                               + xi_hydrogen_fuel_cell*hydrogen_fuel_cell_invest*X5), name='investment cost of the components')
         
-    #年运维成本    
+    #annual operation and maintenance cost   
     photo_hydrogen.addConstr((C2 == module_OM_ratio*module_price*module_capacity + inverter_OM_ratio*inverter_price*inverter_capacity \
                               + compressor_OM_ratio*compressor_invest*N1 + trans_OM_ratio*trans_invest*X2 \
                               + electrolyzer_OM_ratio*electrolyzer_invest*X3 + tanks_OM_ratio*tanks_invest*X4 \
@@ -184,6 +190,9 @@ heilongjiang_electrolyzer = pd.DataFrame()
 heilongjiang_transformer = pd.DataFrame()
 heilongjiang_ghi = pd.DataFrame()
  
+
+
+#calling the function "Heilongjiang_pv" to get the results under different municipality
 for i in range(len(total_city)):
     city = total_city[i]
     data_path = parent_directory + str('/') + str('pv') + str('/') + city + str('_sapm_pv_modeling')  + str('.csv')

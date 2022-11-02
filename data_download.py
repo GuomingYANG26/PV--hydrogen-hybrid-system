@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 11 10:20:13 2022
-
-@author: YANG Guoming
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
 """
 
 import requests

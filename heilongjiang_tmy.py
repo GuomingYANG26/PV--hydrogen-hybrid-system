@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jul 10 10:10:20 2022
-
-@author: YANG Guoming
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
 """
 
 # PV power geneartion modeling considering actual physical process via PVLIB 
@@ -230,23 +232,23 @@ def surface_orientaion (axis_tilt,axis_azimuth,in_path):
     return sum(ac)/8760/1000000*100, ac
 
 def optimize_capacity_factor (tilt, azimuth,in_path):
-    cf               = []       #光伏板不同方位时的光伏电站的容量因子
-    max_cf           = 0        #最大容量因子值
-    max_axis_tilt    = 0        #最大容量因子对应的光伏板倾角
-    max_axis_azimuth = 0        #最大容量因子对应的光伏板朝向
+    cf               = []       #the capacity factor of the PV plant under different orientation
+    max_cf           = 0        #maximum capacity factor
+    max_axis_tilt    = 0        #the tilt angle of the inclined surfac when the maximum capacity factor is acquired
+    max_axis_azimuth = 0        #the azimuth angle of the inclined surfac when the maximum capacity factor is acquired
     pv_module_chain = []
     for axis_tilt in tilt:
         print(axis_tilt)
         time.sleep(5)
         for axis_azimuth in azimuth:
-            (cf0, ac) = surface_orientaion(axis_tilt, axis_azimuth,in_path)   #调用surface_orientaion函数求解光伏板在不同位置时光伏电站对应的容量因子
+            (cf0, ac) = surface_orientaion(axis_tilt, axis_azimuth,in_path)   #the capacity factor of the the PV plant under different orientation is obtained via calling the function of "surface_orientaion"
             cf.append(cf0)   
-            if cf0 >= max_cf:    #判断光伏板当前位置下光伏电站的容量因子是否最大，若是则储存对应数据
+            if cf0 >= max_cf:    #determine whether the largest value of the capacity factor is got, if so, store the related value.
                 max_cf = cf0
                 max_axis_tilt = axis_tilt
                 max_axis_azimuth = axis_azimuth
                 pv_module_chain = ac
-    #将cf,tilt,azimuths重排成矩阵形式
+    #rearrange cf, tilt, azimuths into matrix form
     cf = np.reshape(cf, [len(tilt), len(azimuth)])
     tilts = tilt
     for i in range(len(azimuth)-1):
@@ -257,8 +259,8 @@ def optimize_capacity_factor (tilt, azimuth,in_path):
     azimuths = azimuths.T
     return (max_axis_tilt, max_axis_azimuth, max_cf, tilts, azimuths, cf, pv_module_chain)
 
-
-#程序正式开始，定义tilt,azimuth的范围
+##########---------------------begins here---------------------------------------------
+#define the range of the tilt, azimuth angles of the inclined surfac
 tilt = np.arange(0, 91, 1)
 azimuth = np.arange (90, 271, 1)
 #the municipality in the heilongjiang province

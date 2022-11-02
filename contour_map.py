@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-@author: YANG Guoming
+Created on Sat Jun 11 10:20:13 2022
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
 """
 
 # PV power geneartion modeling considering actual physical process via PVLIB 
@@ -16,7 +20,7 @@ import dill
 import warnings
 warnings.filterwarnings('ignore')
 
-'''
+
 #reads the TMY data downloaded from NSRDB for Harbin  
 with open('D:/Doctor/paper/first2022/code/edition3/harbin_tmy_data.csv', 'r') as f:
     data, metadata =  pvlib.iotools.psm3.parse_psm3(f, map_variables=True)
@@ -234,20 +238,20 @@ def surface_orientaion (axis_tilt, axis_azimuth):
     return sum(ac)/8760/1000000*100
 
 def optimize_capacity_factor (tilt, azimuth):
-    cf               = []       #光伏板不同方位时的光伏电站的容量因子
-    max_cf           = 0        #最大容量因子值
-    max_axis_tilt    = 0        #最大容量因子对应的光伏板倾角
-    max_axis_azimuth = 0        #最大容量因子对应的光伏板朝向
+    cf               = []       #the capacity factor of the PV plant under different orientation
+    max_cf           = 0        #maximum capacity factor
+    max_axis_tilt    = 0        #the tilt angle of the inclined surfac when the maximum capacity factor is acquired
+    max_axis_azimuth = 0        #the azimuth angle of the inclined surfac when the maximum capacity factor is acquired
     for axis_tilt in tilt:
         print(axis_tilt)
         for axis_azimuth in azimuth:
-            cf0 = surface_orientaion(axis_tilt, axis_azimuth)   #调用surface_orientaion函数求解光伏板在不同位置时光伏电站对应的容量因子
+            cf0 = surface_orientaion(axis_tilt, axis_azimuth)   #the capacity factor of the the PV plant under different orientation is obtained via calling the function of "surface_orientaion"
             cf.append(cf0)   
-            if cf0 >= max_cf:    #判断光伏板当前位置下光伏电站的容量因子是否最大，若是则储存对应数据
+            if cf0 >= max_cf:    #determine whether the largest value of the capacity factor is got, if so, store the related value.
                 max_cf = cf0
                 max_axis_tilt = axis_tilt
                 max_axis_azimuth = axis_azimuth
-    #将cf,tilt,azimuths重排成矩阵形式
+    #rearrange cf, tilt, azimuths into matrix form
     cf = np.reshape(cf, [len(tilt), len(azimuth)])
     tilts = tilt
     for i in range(len(azimuth)-1):
@@ -258,28 +262,30 @@ def optimize_capacity_factor (tilt, azimuth):
     azimuths = azimuths.T
     return (max_axis_tilt, max_axis_azimuth, max_cf, tilts, azimuths, cf)
 
-
-#程序正式开始，定义tilt,azimuth的范围
+##########---------------------begins here---------------------------------------------
+#define the range of the tilt, azimuth angles of the inclined surfac
 tilt = np.arange(0, 91, 1)
 azimuth =np.arange (90, 271, 1)
 (max_axis_tilt, max_axis_azimuth, max_cf, tilts, azimuths, cf) = optimize_capacity_factor (tilt, azimuth)
 
 
 
-# 保存运行的全部数据
+# save all data
 transposition_filename = 'D:/Doctor/paper/first2022/code/edition3/contour_map.pkl'
 dill.dump_session(transposition_filename)
 
+
+###############-----------------Code to draw the heat map----------------------
 '''
-#导入保存的数据
+#load the data saved
 import matplotlib.pyplot as plt
 import dill
 transposition_filename = 'D:/Doctor/paper/first2022/code/edition3/contour_map.pkl'
 dill.load_session(transposition_filename)
 
-#画图
+#drawing
 plt.close()
-#85mm对应85/25.4inch，额外×1.2是考虑保存时图片去除空白后图片仍为85mm，这个参数需要手动调
+#85mm corresponds to 85/25.4inch，the extra parameters need to be adjusted manually to guarantee the map is 85mm after the blank part is removed when saving
 f, ax = plt.subplots(1, 1, figsize=(85/25.4*1.4,85/25.4*1.5/3*1.46), dpi=600,
                      subplot_kw=dict(projection='polar'))
 plt.rc('font',family='Times New Roman', size=7)
@@ -319,7 +325,7 @@ plt.title("Capacity factor (%)", fontsize=7, y=0.82, x=0.5)
 plt.show()
 plt.savefig("D:/Doctor/paper/first2022/code/edition3/contourmap.pdf", bbox_inches='tight', pad_inches = 0)
 #plt.savefig("D:/Doctor/paper/first2022/code/edition3/contourmap.pdf", bbox_inches='tight')
-
+'''
 
 
 

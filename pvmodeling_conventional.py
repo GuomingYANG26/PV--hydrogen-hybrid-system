@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun 29 08:44:46 2022
-
-@author: YANG Guoming
+author: Guoming Yang
+School of Electrical Engineering and Automation
+Harbin Institute of Technology
+email: yangguoming1995@gmail.com
 """
 import pvlib
 import numpy as np
@@ -73,7 +75,7 @@ pv_tradional.to_csv(r'D:\Doctor\paper\first2022\code\edition3\pv_tradional.csv',
 
 
 
-####----------------画热图用的程序---------------------
+####----------------Code to get the data needed for drawing heat map---------------------
 pv_tradional = pd.read_csv(r'D:\Doctor\paper\first2022\code\edition3\pv_tradional.csv')
 pv_tradional = pv_tradional.iloc[:,0].values
 pv_tradional_reshape  = pv_tradional.reshape(24,-1,order='F').T/1000000
